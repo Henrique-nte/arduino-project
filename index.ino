@@ -1,7 +1,7 @@
 #include <Servo.h>
 
 // ==========================================
-// 1. CONFIGURAÇÃO DOS PINOS
+//  CONFIGURAÇÃO DOS PINOS
 // ==========================================
 const int pinoSensorLinhaEsq = 2;
 const int pinoSensorLinhaDir = 3;
@@ -38,6 +38,16 @@ enum EstadoRobo {
 // Variável que guarda o que o robô está fazendo AGORA
 EstadoRobo estadoAtual = SEGUIR_LINHA; 
 
+// Definição dos Estados de movimento
+enum Movimento {
+    FRENTE,
+    DIREITA,
+    ESQUERDA,
+    PARADO
+};
+
+Movimento movimentoAtual = FRENTE;
+
 // ==========================================
 // 3. SETUP (Configuração Inicial)
 // ==========================================
@@ -65,6 +75,42 @@ void setup() {
 // ==========================================
 // 4. FUNÇÕES AUXILIARES
 // ==========================================
+
+//Função que decide o movimento 
+Movimento calcularMovimento(bool esqNaLinha, bool dirNaLinha) {
+  if (esqNaLinha && dirNaLinha) return FRENTE;
+  if (!esqNaLinha && dirNaLinha) return DIREITA;
+  if (esqNaLinha && !dirNaLinha) return ESQUERDA;
+  return PARADO;
+}
+
+void executarMovimento(Movimento mov) {
+  switch (mov) {
+    case FRENTE:
+      andarFrente();
+      break;
+
+    case DIREITA:
+      digitalWrite(motorEsqAvanca, HIGH);
+      digitalWrite(motorEsqRecua, LOW);
+      digitalWrite(motorDirAvanca, LOW);
+      digitalWrite(motorDirRecua, LOW);
+      break;
+
+    case ESQUERDA:
+      digitalWrite(motorEsqAvanca, LOW);
+      digitalWrite(motorEsqRecua, LOW);
+      digitalWrite(motorDirAvanca, HIGH);
+      digitalWrite(motorDirRecua, LOW);
+      break;
+
+    case PARADO:
+      pararMotores();
+      break;
+  }
+}
+
+
 float lerDistancia() {
   digitalWrite(pinoTrig, LOW);
   delayMicroseconds(2);
@@ -103,37 +149,20 @@ void loop() {
     case SEGUIR_LINHA:
       {
         float distancia = lerDistancia();
-        
-        // Se viu um objeto muito perto, muda de estado!
+
         if (distancia > 0 && distancia <= DISTANCIA_OBJETO_CM) {
-          Serial.println("Objeto detectado! Mudando para: PARAR_FRENTE_OBJETO");
-          pararMotores();
-          tempoMarcador = millis(); // Marca o momento exato que parou
-          estadoAtual = PARAR_FRENTE_OBJETO;
-          break; // Sai do switch
+            Serial.println("Objeto detectado! Mudando para: PARAR_FRENTE_OBJETO");
+            pararMotores();
+            tempoMarcador = millis();
+            estadoAtual = PARAR_FRENTE_OBJETO;
+            break;
         }
 
-        // Se não tem objeto, continua a lógica normal de seguir linha
         bool esqNaLinha = (digitalRead(pinoSensorLinhaEsq) == LOW);
         bool dirNaLinha = (digitalRead(pinoSensorLinhaDir) == LOW);
 
-        if (esqNaLinha && dirNaLinha) {
-          andarFrente(); // Ambos na linha, vai reto
-        } else if (!esqNaLinha && dirNaLinha) {
-          // Virar para a direita: Motor esquerdo avança, motor direito para (ou recua)
-          digitalWrite(motorEsqAvanca, HIGH);
-          digitalWrite(motorEsqRecua, LOW);
-          digitalWrite(motorDirAvanca, LOW);
-          digitalWrite(motorDirRecua, LOW);
-        } else if (esqNaLinha && !dirNaLinha) {
-          // Virar para a esquerda: Motor direito avança, motor esquerdo para (ou recua)
-          digitalWrite(motorEsqAvanca, LOW);
-          digitalWrite(motorEsqRecua, LOW);
-          digitalWrite(motorDirAvanca, HIGH);
-          digitalWrite(motorDirRecua, LOW);
-        } else {
-          pararMotores(); // Perdeu a linha, para por segurança
-        }
+        movimentoAtual = calcularMovimento(esqNaLinha, dirNaLinha);
+        executarMovimento(movimentoAtual);
       }
       break;
 

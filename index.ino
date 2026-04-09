@@ -10,11 +10,12 @@ const int pinoSensorLinhaDir = 3;
 const int pinoTrig = 8;
 const int pinoEcho = 9;
 
-// Pinos dos Motores (Exemplo usando Ponte H L298N)
-const int motorEsqFrente = 4;
-const int motorEsqTras = 5;
-const int motorDirFrente = 6;
-const int motorDirTras = 7;
+// Pinos dos Motores Traseiros (Usando Ponte H L298N)
+// "Avanca" e "Recua" definem o sentido de giro da roda
+const int motorEsqAvanca = 4;
+const int motorEsqRecua = 5;
+const int motorDirAvanca = 6;
+const int motorDirRecua = 7;
 
 // Pino do Servo (Garra)
 const int pinoServo = 10;
@@ -49,10 +50,11 @@ void setup() {
   pinMode(pinoTrig, OUTPUT);
   pinMode(pinoEcho, INPUT);
   
-  pinMode(motorEsqFrente, OUTPUT);
-  pinMode(motorEsqTras, OUTPUT);
-  pinMode(motorDirFrente, OUTPUT);
-  pinMode(motorDirTras, OUTPUT);
+  // Configurando os pinos dos motores traseiros como saída
+  pinMode(motorEsqAvanca, OUTPUT);
+  pinMode(motorEsqRecua, OUTPUT);
+  pinMode(motorDirAvanca, OUTPUT);
+  pinMode(motorDirRecua, OUTPUT);
   
   garra.attach(pinoServo);
   garra.write(0); // Garra aberta inicialmente (0 graus)
@@ -76,17 +78,18 @@ float lerDistancia() {
 }
 
 void pararMotores() {
-  digitalWrite(motorEsqFrente, LOW);
-  digitalWrite(motorEsqTras, LOW);
-  digitalWrite(motorDirFrente, LOW);
-  digitalWrite(motorDirTras, LOW);
+  digitalWrite(motorEsqAvanca, LOW);
+  digitalWrite(motorEsqRecua, LOW);
+  digitalWrite(motorDirAvanca, LOW);
+  digitalWrite(motorDirRecua, LOW);
 }
 
 void andarFrente() {
-  digitalWrite(motorEsqFrente, HIGH);
-  digitalWrite(motorEsqTras, LOW);
-  digitalWrite(motorDirFrente, HIGH);
-  digitalWrite(motorDirTras, LOW);
+  // Para ir para frente, ativamos o pino de avanço de ambas as rodas traseiras
+  digitalWrite(motorEsqAvanca, HIGH);
+  digitalWrite(motorEsqRecua, LOW);
+  digitalWrite(motorDirAvanca, HIGH);
+  digitalWrite(motorDirRecua, LOW);
 }
 
 // ==========================================
@@ -111,32 +114,35 @@ void loop() {
         }
 
         // Se não tem objeto, continua a lógica normal de seguir linha
-        // Na simulação: HIGH = botão solto, LOW = botão apertado (na linha)
         bool esqNaLinha = (digitalRead(pinoSensorLinhaEsq) == LOW);
         bool dirNaLinha = (digitalRead(pinoSensorLinhaDir) == LOW);
 
         if (esqNaLinha && dirNaLinha) {
           andarFrente(); // Ambos na linha, vai reto
         } else if (!esqNaLinha && dirNaLinha) {
-          // Virar para a direita (ajuste conforme seus motores)
-          digitalWrite(motorEsqFrente, HIGH);
-          digitalWrite(motorDirFrente, LOW);
+          // Virar para a direita: Motor esquerdo avança, motor direito para (ou recua)
+          digitalWrite(motorEsqAvanca, HIGH);
+          digitalWrite(motorEsqRecua, LOW);
+          digitalWrite(motorDirAvanca, LOW);
+          digitalWrite(motorDirRecua, LOW);
         } else if (esqNaLinha && !dirNaLinha) {
-          // Virar para a esquerda
-          digitalWrite(motorEsqFrente, LOW);
-          digitalWrite(motorDirFrente, HIGH);
+          // Virar para a esquerda: Motor direito avança, motor esquerdo para (ou recua)
+          digitalWrite(motorEsqAvanca, LOW);
+          digitalWrite(motorEsqRecua, LOW);
+          digitalWrite(motorDirAvanca, HIGH);
+          digitalWrite(motorDirRecua, LOW);
         } else {
-          pararMotores(); // Perdeu a linha
+          pararMotores(); // Perdeu a linha, para por segurança
         }
       }
       break;
 
     // ----------------------------------------------------
     case PARAR_FRENTE_OBJETO:
-      // Espera 1 segundo (1000 milissegundos) para estabilizar o robô
+      // Espera 1 segundo para estabilizar o robô
       if (millis() - tempoMarcador >= 1000) {
         Serial.println("Estabilizou. Mudando para: FECHAR_GARRA");
-        tempoMarcador = millis(); // Reseta o cronômetro
+        tempoMarcador = millis();
         estadoAtual = FECHAR_GARRA;
       }
       break;
@@ -154,8 +160,8 @@ void loop() {
 
     // ----------------------------------------------------
     case RETOMAR_TRAJETO:
-      // Aqui a garra já está fechada segurando o objeto (ou levantou ele).
-      // O robô simplesmente volta a procurar a linha e andar.
+      // Aqui a garra já está fechada segurando o objeto.
+      // O robô volta a procurar a linha e andar.
       Serial.println("Retomando trajeto com o objeto...");
       estadoAtual = SEGUIR_LINHA;
       break;

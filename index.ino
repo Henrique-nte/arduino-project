@@ -1,33 +1,28 @@
 #include <Servo.h>
 
 // ==========================================
-//  CONFIGURAÇÃO DOS PINOS
+// 1. CONFIGURAÇÃO DOS PINOS
 // ==========================================
 const int pinoSensorLinhaEsq = 2;
 const int pinoSensorLinhaDir = 3;
 
-// Pinos do Ultrassônico
 const int pinoTrig = 8;
 const int pinoEcho = 9;
 
-// Pinos dos Motores Traseiros (Usando Ponte H L298N)
-// "Avanca" e "Recua" definem o sentido de giro da roda
 const int motorEsqAvanca = 4;
 const int motorEsqRecua = 5;
 const int motorDirAvanca = 6;
 const int motorDirRecua = 7;
 
-// Pino do Servo (Garra)
 const int pinoServo = 10;
 
 // ==========================================
-// 2. VARIÁVEIS E OBJETOS
+// 2. VARIÁVEIS E ESTADOS
 // ==========================================
 Servo garra;
-const int DISTANCIA_OBJETO_CM = 5; // Distância para ativar a garra
-long tempoMarcador = 0;            // Variável para controlar o tempo sem usar delay()
+const int DISTANCIA_OBJETO_CM = 5; 
+long tempoMarcador = 0;            
 
-// Definição dos Estados possíveis do nosso robô
 enum EstadoRobo {
   SEGUIR_LINHA,
   PARAR_FRENTE_OBJETO,
@@ -35,21 +30,18 @@ enum EstadoRobo {
   RETOMAR_TRAJETO
 };
 
-// Variável que guarda o que o robô está fazendo AGORA
-EstadoRobo estadoAtual = SEGUIR_LINHA; 
-
-// Definição dos Estados de movimento
 enum Movimento {
-    FRENTE,
-    DIREITA,
-    ESQUERDA,
-    PARADO
+  FRENTE,
+  DIREITA,
+  ESQUERDA,
+  PARADO
 };
 
-Movimento movimentoAtual = FRENTE;
+EstadoRobo estadoAtual = SEGUIR_LINHA;
+Movimento movimentoAtual = PARADO;
 
 // ==========================================
-// 3. SETUP (Configuração Inicial)
+// 3. SETUP
 // ==========================================
 void setup() {
   Serial.begin(9600);
@@ -60,68 +52,20 @@ void setup() {
   pinMode(pinoTrig, OUTPUT);
   pinMode(pinoEcho, INPUT);
   
-  // Configurando os pinos dos motores traseiros como saída
   pinMode(motorEsqAvanca, OUTPUT);
   pinMode(motorEsqRecua, OUTPUT);
   pinMode(motorDirAvanca, OUTPUT);
   pinMode(motorDirRecua, OUTPUT);
   
   garra.attach(pinoServo);
-  garra.write(0); // Garra aberta inicialmente (0 graus)
+  garra.write(0); // Inicia aberta
   
   Serial.println("Robô Iniciado! Estado: SEGUIR_LINHA");
 }
 
 // ==========================================
-// 4. FUNÇÕES AUXILIARES
+// 4. FUNÇÕES DE MOVIMENTAÇÃO
 // ==========================================
-
-//Função que decide o movimento 
-Movimento calcularMovimento(bool esqNaLinha, bool dirNaLinha) {
-  if (esqNaLinha && dirNaLinha) return FRENTE;
-  if (!esqNaLinha && dirNaLinha) return DIREITA;
-  if (esqNaLinha && !dirNaLinha) return ESQUERDA;
-  return PARADO;
-}
-
-void executarMovimento(Movimento mov) {
-  switch (mov) {
-    case FRENTE:
-      andarFrente();
-      break;
-
-    case DIREITA:
-      digitalWrite(motorEsqAvanca, HIGH);
-      digitalWrite(motorEsqRecua, LOW);
-      digitalWrite(motorDirAvanca, LOW);
-      digitalWrite(motorDirRecua, LOW);
-      break;
-
-    case ESQUERDA:
-      digitalWrite(motorEsqAvanca, LOW);
-      digitalWrite(motorEsqRecua, LOW);
-      digitalWrite(motorDirAvanca, HIGH);
-      digitalWrite(motorDirRecua, LOW);
-      break;
-
-    case PARADO:
-      pararMotores();
-      break;
-  }
-}
-
-
-float lerDistancia() {
-  digitalWrite(pinoTrig, LOW);
-  delayMicroseconds(2);
-  digitalWrite(pinoTrig, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(pinoTrig, LOW);
-  
-  long duracao = pulseIn(pinoEcho, HIGH);
-  float distancia = duracao * 0.034 / 2;
-  return distancia;
-}
 
 void pararMotores() {
   digitalWrite(motorEsqAvanca, LOW);
@@ -131,71 +75,136 @@ void pararMotores() {
 }
 
 void andarFrente() {
-  // Para ir para frente, ativamos o pino de avanço de ambas as rodas traseiras
   digitalWrite(motorEsqAvanca, HIGH);
   digitalWrite(motorEsqRecua, LOW);
   digitalWrite(motorDirAvanca, HIGH);
   digitalWrite(motorDirRecua, LOW);
 }
 
+void andar_re() {
+  digitalWrite(motorEsqAvanca, LOW);
+  digitalWrite(motorEsqRecua, HIGH);
+  digitalWrite(motorDirAvanca, LOW);
+  digitalWrite(motorDirRecua, HIGH);
+}
+
+void virar_90g_Direita() {
+    digitalWrite(motorEsqAvanca, HIGH);
+    digitalWrite(motorEsqRecua, LOW);
+    digitalWrite(motorDirAvanca, LOW);
+    digitalWrite(motorDirRecua, HIGH);
+    delay(500); 
+    pararMotores();
+}
+
+void dar_re_90g_direita(){
+    digitalWrite(motorEsqAvanca, LOW);
+    digitalWrite(motorEsqRecua, HIGH);
+    digitalWrite(motorDirAvanca, LOW);
+    digitalWrite(motorDirRecua, LOW);
+    delay(500); 
+    pararMotores();
+}
+
+void andar_1cm_frente() {
+    andarFrente();
+    delay(500); 
+    pararMotores();
+}
+
+// Lógica para seguir linha (simples, para testes)
+Movimento calcularMovimento(bool esqNaLinha, bool dirNaLinha) {
+  if (esqNaLinha && dirNaLinha) return FRENTE;
+  if (!esqNaLinha && dirNaLinha) return DIREITA;
+  if (esqNaLinha && !dirNaLinha) return ESQUERDA;
+  return PARADO;
+}
+
+void executarMovimento(Movimento mov) {
+  switch (mov) {
+    case FRENTE: andarFrente(); break;
+    case DIREITA:
+      digitalWrite(motorEsqAvanca, HIGH);
+      digitalWrite(motorEsqRecua, LOW);
+      digitalWrite(motorDirAvanca, LOW);
+      digitalWrite(motorDirRecua, LOW);
+      break;
+    case ESQUERDA:
+      digitalWrite(motorEsqAvanca, LOW);
+      digitalWrite(motorEsqRecua, LOW);
+      digitalWrite(motorDirAvanca, HIGH);
+      digitalWrite(motorDirRecua, LOW);
+      break;
+    case PARADO: pararMotores(); break;
+  }
+}
+
+float lerDistancia() {
+  digitalWrite(pinoTrig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(pinoTrig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(pinoTrig, LOW);
+  long duracao = pulseIn(pinoEcho, HIGH);
+  return duracao * 0.034 / 2;
+}
+
 // ==========================================
-// 5. LOOP PRINCIPAL (A Máquina de Estados)
+// 5. LOOP PRINCIPAL
 // ==========================================
 void loop() {
-  // A cada ciclo do loop, o robô verifica em qual estado ele está
   switch (estadoAtual) {
 
-    // ----------------------------------------------------
     case SEGUIR_LINHA:
       {
         float distancia = lerDistancia();
-
         if (distancia > 0 && distancia <= DISTANCIA_OBJETO_CM) {
-            Serial.println("Objeto detectado! Mudando para: PARAR_FRENTE_OBJETO");
-            pararMotores();
-            tempoMarcador = millis();
-            estadoAtual = PARAR_FRENTE_OBJETO;
-            break;
+          Serial.println("Objeto detectado! Mudando para: PARAR_FRENTE_OBJETO");
+          pararMotores();
+          tempoMarcador = millis();
+          estadoAtual = PARAR_FRENTE_OBJETO;
+          break;
         }
 
         bool esqNaLinha = (digitalRead(pinoSensorLinhaEsq) == LOW);
         bool dirNaLinha = (digitalRead(pinoSensorLinhaDir) == LOW);
-
         movimentoAtual = calcularMovimento(esqNaLinha, dirNaLinha);
         executarMovimento(movimentoAtual);
       }
       break;
 
-    // ----------------------------------------------------
     case PARAR_FRENTE_OBJETO:
-      // Espera 1 segundo para estabilizar o robô
       if (millis() - tempoMarcador >= 1000) {
-        Serial.println("Estabilizou. Mudando para: FECHAR_GARRA");
         tempoMarcador = millis();
         estadoAtual = FECHAR_GARRA;
       }
       break;
 
-    // ----------------------------------------------------
     case FECHAR_GARRA:
-      garra.write(90); // Move o servo para 90 graus (fechando a garra)
-      
-      // Espera 1,5 segundos para a garra terminar de fechar
+      garra.write(90); // Fecha
       if (millis() - tempoMarcador >= 1500) {
-        Serial.println("Garra fechada. Mudando para: RETOMAR_TRAJETO");
+        Serial.println("Garra fechada. Fazendo manobra...");
+        virar_90g_Direita();
+        andar_1cm_frente();
         estadoAtual = RETOMAR_TRAJETO;
       }
       break;
 
-    // ----------------------------------------------------
     case RETOMAR_TRAJETO:
-      // Aqui a garra já está fechada segurando o objeto.
-      // O robô volta a procurar a linha e andar.
-      Serial.println("Retomando trajeto com o objeto...");
+      Serial.println("Soltando objeto e voltando...");
+      garra.write(0); // Abre
+      delay(1000); 
+      
+      andar_re();
+      delay(500);
+      pararMotores();
+      
+      dar_re_90g_direita();
+      delay(500);
+      pararMotores();
+      
       estadoAtual = SEGUIR_LINHA;
       break;
   }
-  
-  // Um pequeno delay apenas para não sobrecarregar o simulador
-  delay(10); 
+  delay(10);
 }

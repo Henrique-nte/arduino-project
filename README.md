@@ -1,15 +1,15 @@
-### Repositório destinado a armazenar informações do nosso projeto para o PAC 2026-1
+# Repositório destinado a armazenar informações do nosso projeto para o PAC 2026-1
 
 ## Ordem de testes
 
-# Motores
+### Motores
 
-# Sensores
+### Sensores
 
-# Linha + motores
+### Linha + motores
 
-# Ultrassônico
+### Ultrassônico
 
-# Garra
+### Garra
 
-# Sistema completo
+### Sistema completo

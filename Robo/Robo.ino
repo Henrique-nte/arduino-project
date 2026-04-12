@@ -4,6 +4,7 @@
 #include "../src/garra/garra.h"
 #include "../config/pinos.h"
 
+#include "Arduino.h"
 
 enum Movimento {
   FRENTE,

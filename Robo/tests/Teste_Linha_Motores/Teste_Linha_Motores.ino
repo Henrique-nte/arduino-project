@@ -82,8 +82,6 @@ void executarMovimento(Movimento mov) {
 // SETUP
 // ==========================================
 void setup() {
-  Serial.begin(9600);
-
   motores_init(
     MOTOR_ESQ_AVANCA,
     MOTOR_ESQ_RECUA,
@@ -97,10 +95,6 @@ void setup() {
     PINO_DIR_INT,
     PINO_DIR_EXT
   );
-
-  Serial.println("==================================");
-  Serial.println(" TESTE: LINHA + MOTORES");
-  Serial.println("==================================");
 
   pararMotores();
   delay(1000);
@@ -117,26 +111,6 @@ void loop() {
   Movimento mov = calcularMovimento(eExt, eInt, dInt, dExt);
 
   executarMovimento(mov);
-
-  // DEBUG VISUAL (MUITO IMPORTANTE)
-  Serial.print("Sensores: ");
-
-  Serial.print(eExt ? "[■]" : "[ ]");
-  Serial.print(eInt ? "[■]" : "[ ]");
-  Serial.print(" | ");
-  Serial.print(dInt ? "[■]" : "[ ]");
-  Serial.print(dExt ? "[■]" : "[ ]");
-
-  Serial.print("  ->  ");
-
-  switch (mov) {
-    case FRENTE: Serial.println("FRENTE"); break;
-    case CURVA_ESQUERDA: Serial.println("CURVA ESQ"); break;
-    case CURVA_DIREITA: Serial.println("CURVA DIR"); break;
-    case VIRAR_ESQUERDA: Serial.println("VIRA ESQ"); break;
-    case VIRAR_DIREITA: Serial.println("VIRA DIR"); break;
-    case PARADO: Serial.println("PARADO"); break;
-  }
 
   delay(20);
 }
